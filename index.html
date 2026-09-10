@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TKD Scoreboard · Score & Penalty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101012;
+    --panel:#19191b;
+    --line: rgba(244,239,228,0.13);
+    --ink:#f4efe4;
+    --ink-dim: rgba(244,239,228,0.55);
+    --red:#b31631; --red-dim:#7e0f22;
+    --blue:#163f9e; --blue-dim:#0e2a6e;
+    --gold:#c9a24a;
+    --warn:#e0a530;
+    --foul:#ff5a45;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif;
+        height:100vh; height:100dvh; overflow:hidden; }
+  .app{ display:flex; flex-direction:column; height:100vh; height:100dvh; }
+
+  .topbar{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:baseline; gap:8px; }
+  .brand .mark{ font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:0.04em; color:var(--gold); }
+  .brand .sub{ font-size:11px; color:var(--ink-dim); }
+  .reset-btn{
+    background:transparent; border:1px solid var(--line); color:var(--ink-dim);
+    font-size:12px; padding:7px 12px; border-radius:6px; cursor:pointer;
+  }
+  .reset-btn:hover{ color:var(--ink); border-color:var(--ink-dim); }
+
+  .arena{ flex:1 1 auto; display:flex; min-height:0; }
+  .side{ flex:1 1 50%; display:flex; flex-direction:column; min-width:0; position:relative; overflow:hidden; }
+  .side.red{ background: linear-gradient(180deg, var(--red) 0%, var(--red-dim) 100%); }
+  .side.blue{ background: linear-gradient(180deg, var(--blue) 0%, var(--blue-dim) 100%); }
+  .divider{ width:1px; background:rgba(0,0,0,0.4); flex:0 0 auto; }
+
+  .side-head{ flex:0 0 auto; padding:10px 14px 0; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .name{
+    font-family:'Oswald',sans-serif; font-size:15px; font-weight:500; letter-spacing:0.02em;
+    background:transparent; border:none; color:var(--ink); border-bottom:1px solid transparent;
+    padding:2px 0; width:100%; min-width:0;
+  }
+  .name:focus{ outline:none; border-bottom-color:rgba(244,239,228,0.5); }
+  .dq-badge{
+    font-family:'Inter'; font-size:11px; font-weight:700; letter-spacing:0.04em;
+    color:var(--foul); background:rgba(0,0,0,0.28); border:1px solid var(--foul);
+    padding:3px 8px; border-radius:5px; display:none; white-space:nowrap;
+  }
+  .dq-badge.show{ display:inline-block; }
+
+  /* ---- body row: score-column (outer edge) + main content ---- */
+  .side-body{ flex:1 1 auto; display:flex; flex-direction:row; min-height:0; }
+  .side.blue .side-body{ flex-direction:row-reverse; }
+
+  .score-col{
+    flex:0 0 auto; width:64px; display:flex; flex-direction:column; gap:6px;
+    padding:6px 8px; justify-content:center; align-items:stretch;
+  }
+  .score-col .pt-btn{
+    background: rgba(0,0,0,0.20); border:1px solid rgba(244,239,228,0.3); color:var(--ink);
+    border-radius:9px; padding:14px 2px; font-family:'Oswald',sans-serif; font-size:18px; font-weight:600; cursor:pointer;
+  }
+  .score-col .pt-btn:active{ background: rgba(0,0,0,0.36); transform:scale(0.96); }
+  .score-col .erase-btn{
+    margin-top:4px; background: transparent; border:1px dashed rgba(244,239,228,0.3);
+    color: rgba(244,239,228,0.75); border-radius:8px; padding:8px 2px; font-family:'Inter'; font-size:10px; cursor:pointer;
+  }
+  .score-col .erase-btn:disabled{ opacity:0.3; cursor:default; }
+
+  .main-col{ flex:1 1 auto; display:flex; flex-direction:column; min-width:0; min-height:0; }
+
+  .score-wrap{ flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:2px 4px; }
+  .score{ font-family:'Oswald',sans-serif; font-weight:700; font-size:min(16vw, 88px); line-height:1; user-select:none; }
+
+  .penalties{ flex:1 1 auto; display:flex; flex-direction:column; gap:5px; padding:4px 10px 10px; min-height:0; }
+  .pen-card{
+    background: rgba(0,0,0,0.20); border:1px solid rgba(244,239,228,0.18); border-radius:9px; padding:5px 8px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .pen-left{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .pen-head{ display:flex; align-items:center; gap:6px; }
+  .pen-title{ font-family:'Oswald',sans-serif; font-size:10.5px; letter-spacing:0.03em; }
+  .pen-title.w{ color: var(--warn); }
+  .pen-title.f{ color: var(--foul); }
+  .pen-count{ font-family:'Oswald',sans-serif; font-size:11px; font-variant-numeric: tabular-nums; color: rgba(244,239,228,0.9); }
+  .dots{ display:flex; gap:3px; }
+  .dot{ width:6px; height:6px; border-radius:50%; background: rgba(244,239,228,0.18); border:1px solid rgba(244,239,228,0.3); }
+  .dot.w-fill{ background: var(--warn); border-color: var(--warn); }
+  .dot.f-fill{ background: var(--foul); border-color: var(--foul); }
+  .pen-btn{
+    flex:0 0 auto; background: rgba(0,0,0,0.22); border:1px solid rgba(244,239,228,0.28); color:var(--ink);
+    border-radius:7px; padding:6px 10px; font-family:'Inter'; font-size:10.5px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .pen-btn:active{ transform:scale(0.95); }
+  .pen-btn:disabled{ opacity:0.35; cursor:default; }
+
+  .log{
+    flex:1 1 auto; min-height:0; overflow-y:auto;
+    background: rgba(0,0,0,0.16); border:1px solid rgba(244,239,228,0.12); border-radius:10px;
+    padding:6px 10px; font-family:'Inter'; font-size:11px; color: rgba(244,239,228,0.75);
+  }
+  .log-title{ font-size:10px; letter-spacing:0.05em; color: rgba(244,239,228,0.45); margin-bottom:3px; }
+  .log-entry{ padding:2px 0; border-top:1px dashed rgba(244,239,228,0.08); }
+  .log-entry:first-child{ border-top:none; }
+
+  .bottombar{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    padding:8px 12px; background:var(--panel); border-top:1px solid var(--line);
+    font-family:'Inter'; font-size:11px; color:var(--ink-dim); text-align:center;
+  }
+
+  @media (max-width: 620px){
+    .score{ font-size:min(14vw, 58px); }
+    .name{ font-size:13px; }
+    .score-col{ width:52px; }
+    .score-col .pt-btn{ font-size:15px; padding:11px 2px; }
+    .pen-title{ font-size:9.5px; }
+    .pen-btn{ font-size:10px; padding:5px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">TKD SCOREBOARD</span>
+      <span class="sub">score & penalty tracker</span>
+    </div>
+    <button class="reset-btn" id="resetAllBtn">Reset all</button>
+  </div>
+
+  <div class="arena">
+    <!-- RED -->
+    <div class="side red" data-side="red">
+      <div class="side-head">
+        <input class="name" id="nameRed" value="Red" maxlength="16">
+        <span class="dq-badge" id="dqRed">DISQUALIFIED</span>
+      </div>
+      <div class="side-body">
+        <div class="score-col">
+          <button class="pt-btn" data-side="red" data-pts="1">+1</button>
+          <button class="pt-btn" data-side="red" data-pts="2">+2</button>
+          <button class="pt-btn" data-side="red" data-pts="3">+3</button>
+          <button class="erase-btn" data-side="red" id="eraseRed">Erase last</button>
+        </div>
+        <div class="main-col">
+          <div class="score-wrap"><div class="score" id="scoreRed">0</div></div>
+          <div class="penalties">
+            <div class="pen-card">
+              <div class="pen-left">
+                <div class="pen-head"><span class="pen-title w">WARNING</span><span class="pen-count" id="warnCountRed">0</span></div>
+                <div class="dots" id="warnDotsRed"></div>
+              </div>
+              <button class="pen-btn" data-side="red" data-action="warn" id="warnBtnRed">+ Warning</button>
+            </div>
+            <div class="pen-card">
+              <div class="pen-left">
+                <div class="pen-head"><span class="pen-title f">FOUL</span><span class="pen-count" id="foulCountRed">0</span></div>
+                <div class="dots" id="foulDotsRed"></div>
+              </div>
+              <button class="pen-btn" data-side="red" data-action="foul" id="foulBtnRed">+ Foul</button>
+            </div>
+            <div class="log" id="logRed">
+              <div class="log-title">RECORD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- BLUE -->
+    <div class="side blue" data-side="blue">
+      <div class="side-head">
+        <input class="name" id="nameBlue" value="Blue" maxlength="16">
+        <span class="dq-badge" id="dqBlue">DISQUALIFIED</span>
+      </div>
+      <div class="side-body">
+        <div class="score-col">
+          <button class="pt-btn" data-side="blue" data-pts="1">+1</button>
+          <button class="pt-btn" data-side="blue" data-pts="2">+2</button>
+          <button class="pt-btn" data-side="blue" data-pts="3">+3</button>
+          <button class="erase-btn" data-side="blue" id="eraseBlue">Erase last</button>
+        </div>
+        <div class="main-col">
+          <div class="score-wrap"><div class="score" id="scoreBlue">0</div></div>
+          <div class="penalties">
+            <div class="pen-card">
+              <div class="pen-left">
+                <div class="pen-head"><span class="pen-title w">WARNING</span><span class="pen-count" id="warnCountBlue">0</span></div>
+                <div class="dots" id="warnDotsBlue"></div>
+              </div>
+              <button class="pen-btn" data-side="blue" data-action="warn" id="warnBtnBlue">+ Warning</button>
+            </div>
+            <div class="pen-card">
+              <div class="pen-left">
+                <div class="pen-head"><span class="pen-title f">FOUL</span><span class="pen-count" id="foulCountBlue">0</span></div>
+                <div class="dots" id="foulDotsBlue"></div>
+              </div>
+              <button class="pen-btn" data-side="blue" data-action="foul" id="foulBtnBlue">+ Foul</button>
+            </div>
+            <div class="log" id="logBlue">
+              <div class="log-title">RECORD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">Every 3rd warning deducts 1 point · Every foul deducts 1 point · 3rd foul disqualifies</div>
+</div>
+
+<script>
+(function(){
+  const sides = ['red','blue'];
+  const state = {
+    red:  { score:0, scoreHistory:[], warn:0, foul:0, dq:false },
+    blue: { score:0, scoreHistory:[], warn:0, foul:0, dq:false }
+  };
+
+  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+  const el = id => document.getElementById(id);
+  const ids = {};
+  sides.forEach(side => {
+    ids[side] = {
+      score: el('score'+cap(side)),
+      dqBadge: el('dq'+cap(side)),
+      erase: el('erase'+cap(side)),
+      warnCount: el('warnCount'+cap(side)),
+      foulCount: el('foulCount'+cap(side)),
+      warnDots: el('warnDots'+cap(side)),
+      foulDots: el('foulDots'+cap(side)),
+      warnBtn: el('warnBtn'+cap(side)),
+      foulBtn: el('foulBtn'+cap(side)),
+      log: el('log'+cap(side)),
+      ptBtns: document.querySelectorAll('.pt-btn[data-side="'+side+'"]')
+    };
+  });
+
+  function addLog(side, text){
+    const s = state[side];
+    const r = ids[side];
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.textContent = text;
+    r.log.insertBefore(entry, r.log.children[1] || null);
+    while(r.log.children.length > 9){
+      r.log.removeChild(r.log.lastChild);
+    }
+  }
+
+  function renderDots(container, count, mod, fillClass){
+    container.innerHTML = '';
+    const shown = mod ? (count % mod === 0 && count > 0 ? mod : count % mod) : count;
+    const total = mod || Math.max(count,3);
+    for(let i=1;i<=total;i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (i <= shown ? ' '+fillClass : '');
+      container.appendChild(d);
+    }
+  }
+
+  function render(side){
+    const s = state[side];
+    const r = ids[side];
+    r.score.textContent = s.score;
+    r.dqBadge.classList.toggle('show', s.dq);
+    r.erase.disabled = s.scoreHistory.length === 0;
+    r.warnCount.textContent = s.warn;
+    r.foulCount.textContent = s.foul + ' / 3';
+    renderDots(r.warnDots, s.warn, 3, 'w-fill');
+    renderDots(r.foulDots, s.foul, 3, 'f-fill');
+    r.warnBtn.disabled = s.dq;
+    r.foulBtn.disabled = s.dq;
+    r.ptBtns.forEach(b => b.disabled = s.dq);
+  }
+
+  function addPoints(side, pts){
+    const s = state[side];
+    if(s.dq) return;
+    s.score += pts;
+    s.scoreHistory.push(pts);
+    addLog(side, '+' + pts + ' point');
+    render(side);
+  }
+
+  function eraseLast(side){
+    const s = state[side];
+    if(s.scoreHistory.length === 0) return;
+    const last = s.scoreHistory.pop();
+    s.score -= last;
+    addLog(side, 'Erased last +' + last);
+    render(side);
+  }
+
+  function addWarning(side){
+    const s = state[side];
+    if(s.dq) return;
+    s.warn += 1;
+    addLog(side, 'Warning ' + s.warn);
+    if(s.warn % 3 === 0){
+      s.score -= 1;
+      addLog(side, '3 warnings → −1 point');
+    }
+    render(side);
+  }
+
+  function addFoul(side){
+    const s = state[side];
+    if(s.dq) return;
+    s.foul += 1;
+    s.score -= 1;
+    addLog(side, 'Foul ' + s.foul + ' → −1 point');
+    if(s.foul >= 3){
+      s.dq = true;
+      addLog(side, '3rd foul → disqualified');
+    }
+    render(side);
+  }
+
+  sides.forEach(side => {
+    ids[side].ptBtns.forEach(btn => {
+      btn.addEventListener('click', () => addPoints(side, parseInt(btn.dataset.pts,10)));
+    });
+    ids[side].erase.addEventListener('click', () => eraseLast(side));
+    ids[side].warnBtn.addEventListener('click', () => addWarning(side));
+    ids[side].foulBtn.addEventListener('click', () => addFoul(side));
+  });
+
+  el('resetAllBtn').addEventListener('click', () => {
+    if(!confirm('Reset both competitors? This clears scores, warnings and fouls.')) return;
+    sides.forEach(side => {
+      state[side] = { score:0, scoreHistory:[], warn:0, foul:0, dq:false };
+      ids[side].log.innerHTML = '<div class="log-title">RECORD</div>';
+      render(side);
+    });
+  });
+
+  sides.forEach(render);
+})();
+</script>
+</body>
+</html>
