@@ -82,7 +82,7 @@
   .score-wrap{ flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:2px 4px; }
   .score{ font-family:'Oswald',sans-serif; font-weight:700; font-size:min(16vw, 88px); line-height:1; user-select:none; }
 
-  .penalties{ flex:1 1 auto; display:flex; flex-direction:column; gap:5px; padding:4px 10px 10px; min-height:0; }
+  .penalties{ flex:1 1 auto; display:flex; flex-direction:column; gap:8px; padding:4px 10px 10px; min-height:0; justify-content:center; }
   .pen-card{
     background: rgba(0,0,0,0.20); border:1px solid rgba(244,239,228,0.18); border-radius:9px; padding:5px 8px;
     display:flex; align-items:center; justify-content:space-between; gap:8px;
@@ -103,15 +103,6 @@
   }
   .pen-btn:active{ transform:scale(0.95); }
   .pen-btn:disabled{ opacity:0.35; cursor:default; }
-
-  .log{
-    flex:1 1 auto; min-height:0; overflow-y:auto;
-    background: rgba(0,0,0,0.16); border:1px solid rgba(244,239,228,0.12); border-radius:10px;
-    padding:6px 10px; font-family:'Inter'; font-size:11px; color: rgba(244,239,228,0.75);
-  }
-  .log-title{ font-size:10px; letter-spacing:0.05em; color: rgba(244,239,228,0.45); margin-bottom:3px; }
-  .log-entry{ padding:2px 0; border-top:1px dashed rgba(244,239,228,0.08); }
-  .log-entry:first-child{ border-top:none; }
 
   .bottombar{
     flex:0 0 auto; display:flex; align-items:center; justify-content:center;
@@ -171,9 +162,6 @@
               </div>
               <button class="pen-btn" data-side="red" data-action="foul" id="foulBtnRed">+ Foul</button>
             </div>
-            <div class="log" id="logRed">
-              <div class="log-title">RECORD</div>
-            </div>
           </div>
         </div>
       </div>
@@ -211,9 +199,6 @@
               </div>
               <button class="pen-btn" data-side="blue" data-action="foul" id="foulBtnBlue">+ Foul</button>
             </div>
-            <div class="log" id="logBlue">
-              <div class="log-title">RECORD</div>
-            </div>
           </div>
         </div>
       </div>
@@ -245,22 +230,9 @@
       foulDots: el('foulDots'+cap(side)),
       warnBtn: el('warnBtn'+cap(side)),
       foulBtn: el('foulBtn'+cap(side)),
-      log: el('log'+cap(side)),
       ptBtns: document.querySelectorAll('.pt-btn[data-side="'+side+'"]')
     };
   });
-
-  function addLog(side, text){
-    const s = state[side];
-    const r = ids[side];
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.textContent = text;
-    r.log.insertBefore(entry, r.log.children[1] || null);
-    while(r.log.children.length > 9){
-      r.log.removeChild(r.log.lastChild);
-    }
-  }
 
   function renderDots(container, count, mod, fillClass){
     container.innerHTML = '';
@@ -293,7 +265,6 @@
     if(s.dq) return;
     s.score += pts;
     s.scoreHistory.push(pts);
-    addLog(side, '+' + pts + ' point');
     render(side);
   }
 
@@ -302,7 +273,6 @@
     if(s.scoreHistory.length === 0) return;
     const last = s.scoreHistory.pop();
     s.score -= last;
-    addLog(side, 'Erased last +' + last);
     render(side);
   }
 
@@ -310,10 +280,8 @@
     const s = state[side];
     if(s.dq) return;
     s.warn += 1;
-    addLog(side, 'Warning ' + s.warn);
     if(s.warn % 3 === 0){
       s.score -= 1;
-      addLog(side, '3 warnings → −1 point');
     }
     render(side);
   }
@@ -323,10 +291,8 @@
     if(s.dq) return;
     s.foul += 1;
     s.score -= 1;
-    addLog(side, 'Foul ' + s.foul + ' → −1 point');
     if(s.foul >= 3){
       s.dq = true;
-      addLog(side, '3rd foul → disqualified');
     }
     render(side);
   }
@@ -344,7 +310,6 @@
     if(!confirm('Reset both competitors? This clears scores, warnings and fouls.')) return;
     sides.forEach(side => {
       state[side] = { score:0, scoreHistory:[], warn:0, foul:0, dq:false };
-      ids[side].log.innerHTML = '<div class="log-title">RECORD</div>';
       render(side);
     });
   });
