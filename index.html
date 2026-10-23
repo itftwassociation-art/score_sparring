@@ -1,417 +1,824 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TKD Scoreboard · Score & Penalty</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ITF 對打計分板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Noto+Sans+TC:wght@500;700&display=swap">
 <style>
-  :root{
-    --bg:#101012;
-    --panel:#19191b;
-    --line: rgba(244,239,228,0.13);
-    --ink:#f4efe4;
-    --ink-dim: rgba(244,239,228,0.55);
-    --red:#b31631; --red-dim:#7e0f22;
-    --blue:#163f9e; --blue-dim:#0e2a6e;
-    --gold:#c9a24a;
-    --warn:#e0a530;
-    --foul:#ff5a45;
+  /* Layout: top bar (title, tabs, sync) + judge/finish row; "計分 Scoring" = red left / blue right mirrored panels,
+     each: vertical key column (+1 +2 +3, undo last) on the outer edge; competitor, big net score, tallies, warning / deduct toward the centre.
+     "結果 Results" = match picker, majority-vote banner, four-judge table, log. Chinese + English everywhere. */
+  :root {
+    --bg: #E8EBF0;
+    --fg: #141A24;
+    --muted: #586172;
+    --line: #C6CCD7;
+    --surface: #F6F8FB;
+    --red: #C42E33;
+    --blue: #1D4DBB;
+    --ink: #FFFFFF;
+    --ok: #1B7F4B;
+    --warn: #9A5B00;
+    --err: #B3261E;
+    --font-display: 'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+    --font-body: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
-  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif;
-        height:100vh; height:100dvh; overflow:hidden; }
-  .app{ display:flex; flex-direction:column; height:100vh; height:100dvh; }
-
-  .topbar{
-    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
-    padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0D1117; --fg: #E7EBF2; --muted: #98A2B3; --line: #262D3A; --surface: #151B25;
+      --red: #B02429; --blue: #1A429E; --ok: #52C98B; --warn: #E0A84A; --err: #FF8A80;
+      color-scheme: dark;
+    }
   }
-  .brand{ display:flex; align-items:baseline; gap:8px; }
-  .brand .mark{ font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:0.04em; color:var(--gold); }
-  .brand .sub{ font-size:11px; color:var(--ink-dim); }
-  .reset-btn{
-    background:transparent; border:1px solid var(--line); color:var(--ink-dim);
-    font-size:12px; padding:7px 12px; border-radius:6px; cursor:pointer;
-  }
-  .reset-btn:hover{ color:var(--ink); border-color:var(--ink-dim); }
-  .topbar-actions{ display:flex; gap:8px; }
-
-  /* ---- rotate-to-landscape prompt (mobile portrait) ---- */
-  .rotate-overlay{
-    position:fixed; inset:0; z-index:60; background:var(--bg);
-    display:none; flex-direction:column; align-items:center; justify-content:center;
-    gap:16px; padding:28px; text-align:center;
-  }
-  .rotate-overlay.show{ display:flex; }
-  .rotate-icon{
-    width:56px; height:56px; border:3px solid var(--gold); border-radius:8px;
-    animation: rotateHint 1.6s ease-in-out infinite;
-  }
-  @keyframes rotateHint{
-    0%,20%{ transform:rotate(0deg); }
-    50%,70%{ transform:rotate(-90deg); }
-    100%{ transform:rotate(-90deg); }
-  }
-  .rotate-overlay h2{ font-family:'Oswald',sans-serif; font-size:18px; font-weight:500; margin:0; }
-  .rotate-overlay p{ font-family:'Inter'; font-size:12.5px; color:var(--ink-dim); margin:0; max-width:260px; }
-  .rotate-continue{
-    margin-top:6px; background:transparent; border:1px solid var(--line); color:var(--ink-dim);
-    font-size:12px; padding:8px 14px; border-radius:7px; cursor:pointer;
+  :root[data-theme="dark"] {
+    --bg: #0D1117; --fg: #E7EBF2; --muted: #98A2B3; --line: #262D3A; --surface: #151B25;
+    --red: #B02429; --blue: #1A429E; --ok: #52C98B; --warn: #E0A84A; --err: #FF8A80;
+    color-scheme: dark;
   }
 
-  .arena{ flex:1 1 auto; display:flex; min-height:0; }
-  .side{ flex:1 1 50%; display:flex; flex-direction:column; min-width:0; position:relative; overflow:hidden; }
-  .side.red{ background: linear-gradient(180deg, var(--red) 0%, var(--red-dim) 100%); }
-  .side.blue{ background: linear-gradient(180deg, var(--blue) 0%, var(--blue-dim) 100%); }
-  .divider{ width:1px; background:rgba(0,0,0,0.4); flex:0 0 auto; }
-
-  .side-head{ flex:0 0 auto; padding:10px 14px 0; display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .name{
-    font-family:'Oswald',sans-serif; font-size:15px; font-weight:500; letter-spacing:0.02em;
-    background:transparent; border:none; color:var(--ink); border-bottom:1px solid transparent;
-    padding:2px 0; width:100%; min-width:0;
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg); font-family: var(--font-body);
+    padding-block: 8px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 8px;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   }
-  .name:focus{ outline:none; border-bottom-color:rgba(244,239,228,0.5); }
-  .dq-badge{
-    font-family:'Inter'; font-size:11px; font-weight:700; letter-spacing:0.04em;
-    color:var(--foul); background:rgba(0,0,0,0.28); border:1px solid var(--foul);
-    padding:3px 8px; border-radius:5px; display:none; white-space:nowrap;
-  }
-  .dq-badge.show{ display:inline-block; }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; user-select: none; -webkit-user-select: none; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .btn:focus-visible, .field input:focus-visible, .seg button:focus-visible, .tabs button:focus-visible, .bout:focus-visible { outline-color: var(--fg); }
 
-  /* ---- body row: score-column (outer edge) + main content ---- */
-  .side-body{ flex:1 1 auto; display:flex; flex-direction:row; min-height:0; }
-  .side.blue .side-body{ flex-direction:row-reverse; }
+  .en { font-size: .78em; font-weight: 500; opacity: .85; margin-left: .35em; }
+  .st { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; text-align: center; }
+  .st .en { display: block; margin: 0; }
 
-  .score-col{
-    flex:0 0 auto; width:64px; display:flex; flex-direction:column; gap:6px;
-    padding:6px 8px; justify-content:center; align-items:stretch;
+  /* ---------- top bar ---------- */
+  .bar-top { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+  .bar-top h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px;
+    letter-spacing: .05em; text-transform: uppercase; line-height: 1; white-space: nowrap;
   }
-  .score-col .pt-btn{
-    background: rgba(0,0,0,0.20); border:1px solid rgba(244,239,228,0.3); color:var(--ink);
-    border-radius:9px; padding:14px 2px; font-family:'Oswald',sans-serif; font-size:18px; font-weight:600; cursor:pointer;
-  }
-  .score-col .pt-btn:active{ background: rgba(0,0,0,0.36); transform:scale(0.96); }
-  .score-col .erase-btn{
-    margin-top:4px; background: transparent; border:1px dashed rgba(244,239,228,0.3);
-    color: rgba(244,239,228,0.75); border-radius:8px; padding:8px 2px; font-family:'Inter'; font-size:10px; cursor:pointer;
-  }
-  .score-col .erase-btn:disabled{ opacity:0.3; cursor:default; }
+  .bar-top h1 span { font-family: var(--font-body); font-size: 12px; letter-spacing: .02em; margin-left: 6px; color: var(--muted); font-weight: 500; text-transform: none; }
+  @media (max-width: 640px) { .bar-top h1 span { display: none; } }
+  .tabs { display: flex; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .tabs button { background: transparent; padding: 0 12px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+  .sync { flex: 1 1 90px; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-weight: 700; }
+  #sync-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sync .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .sync[data-k="ok"] .dot { background: var(--ok); }
+  .sync[data-k="warn"] .dot, .sync[data-k="busy"] .dot { background: var(--warn); }
+  .sync[data-k="err"] .dot { background: var(--err); }
+  .sync[data-k="ok"] { color: var(--ok); }
+  .sync[data-k="warn"], .sync[data-k="busy"] { color: var(--warn); }
+  .sync[data-k="err"] { color: var(--err); }
+  .sync[data-k="idle"], .sync[data-k="off"] { color: var(--muted); }
 
-  .main-col{ flex:1 1 auto; display:flex; flex-direction:column; min-width:0; min-height:0; }
-
-  .score-wrap{ flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:2px 4px; }
-  .score{ font-family:'Oswald',sans-serif; font-weight:700; font-size:min(16vw, 88px); line-height:1; user-select:none; }
-
-  .penalties{ flex:1 1 auto; display:flex; flex-direction:column; gap:8px; padding:4px 10px 10px; min-height:0; justify-content:center; }
-  .pen-card{
-    background: rgba(0,0,0,0.20); border:1px solid rgba(244,239,228,0.18); border-radius:9px; padding:5px 8px;
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  .btn {
+    min-height: 36px; padding: 0 10px; border-radius: 8px; background: transparent;
+    border: 2px solid var(--line); color: var(--fg); font-weight: 700; font-size: 13px; white-space: nowrap;
   }
-  .pen-left{ display:flex; flex-direction:column; gap:3px; min-width:0; }
-  .pen-head{ display:flex; align-items:center; gap:6px; }
-  .pen-title{ font-family:'Oswald',sans-serif; font-size:10.5px; letter-spacing:0.03em; }
-  .pen-title.w{ color: var(--warn); }
-  .pen-title.f{ color: var(--foul); }
-  .pen-count{ font-family:'Oswald',sans-serif; font-size:11px; font-variant-numeric: tabular-nums; color: rgba(244,239,228,0.9); }
-  .dots{ display:flex; gap:3px; }
-  .dot{ width:6px; height:6px; border-radius:50%; background: rgba(244,239,228,0.18); border:1px solid rgba(244,239,228,0.3); }
-  .dot.w-fill{ background: var(--warn); border-color: var(--warn); }
-  .dot.f-fill{ background: var(--foul); border-color: var(--foul); }
-  .pen-btn{
-    flex:0 0 auto; background: rgba(0,0,0,0.22); border:1px solid rgba(244,239,228,0.28); color:var(--ink);
-    border-radius:7px; padding:6px 10px; font-family:'Inter'; font-size:10.5px; font-weight:600; cursor:pointer; white-space:nowrap;
-  }
-  .pen-btn:active{ transform:scale(0.95); }
-  .pen-btn:disabled{ opacity:0.35; cursor:default; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn.mini { min-height: 28px; padding: 0 8px; font-size: 12px; flex: none; }
+  #next, #finish { min-height: 38px; padding: 0 14px; font-size: 14px; background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  #reset.confirm, #resetp.confirm, #clear.confirm { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
-  .bottombar{
-    flex:0 0 auto; display:flex; align-items:center; justify-content:center;
-    padding:8px 12px; background:var(--panel); border-top:1px solid var(--line);
-    font-family:'Inter'; font-size:11px; color:var(--ink-dim); text-align:center;
+  /* ---------- judge row ---------- */
+  .bar-ctrl { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
+  .field { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .field input {
+    min-height: 38px; width: 7.5em; max-width: 100%; padding: 0 10px; border-radius: 8px;
+    border: 2px solid var(--line); background: var(--surface); color: var(--fg); font: 700 14px var(--font-body);
+  }
+  .seg { display: flex; gap: 3px; }
+  .seg button {
+    min-width: 38px; padding: 0 6px; min-height: 38px; border-radius: 8px; background: transparent;
+    border: 2px solid var(--line); color: var(--fg); font: 700 16px var(--font-display);
+  }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  @media (max-width: 900px) { #reset .en { display: none; } }
+  .grow { flex: 1 1 4px; }
+  .stage { display: none; }
+  .result { font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 8px; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .result.red { background: var(--red); }
+  .result.blue { background: var(--blue); }
+  .result.tie { background: var(--fg); color: var(--bg); }
+
+  /* ---------- scoring board: always red left / blue right, mirrored about the centre line (fits one screen) ---------- */
+  main {
+    flex: 1; min-height: 0; overflow: hidden; display: grid; gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .panel {
+    --side: var(--red); background: var(--side); color: var(--ink); border-radius: 12px; padding: 8px;
+    display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 8px;
+    container-type: size; min-width: 0; min-height: 0; overflow: hidden; position: relative;
+  }
+  .panel.blue { --side: var(--blue); }
+  .panel.win { box-shadow: inset 0 0 0 4px #fff; }
+  .panel.locked .keys, .panel.locked .acts { opacity: .5; }
+
+  /* key column: +1 +2 +3 / undo stacked vertically on the outer edge */
+  .keys { display: flex; flex-direction: column; gap: 6px; min-height: 0; min-width: 0; }
+  .pt {
+    flex: 1; min-height: 0; border-radius: 10px; background: #fff; color: var(--side);
+    font-family: var(--font-display); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+    font-size: 34px; font-size: clamp(24px, min(13cqh, 26cqw), 80px); transition: transform .06s;
+  }
+  .pt:active:not(:disabled) { transform: scale(.96); }
+  .pt:disabled { opacity: .35; cursor: not-allowed; }
+  .undo {
+    flex: .8; min-height: 0; border-radius: 10px; background: rgba(0,0,0,.32); color: #fff;
+    border: 2px solid rgba(255,255,255,.7); font-weight: 700; font-size: 14px; padding: 2px 4px;
+  }
+  .undo .en { font-size: .72em; }
+  .undo .sub { font-family: var(--font-display); font-size: 14px; letter-spacing: .06em; min-height: 1em; }
+  .undo:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* info column: competitor, net score, tallies, warning / deduct */
+  .info { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; }
+  .panel.blue .info { align-items: flex-end; text-align: right; }
+  .chip-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .panel.blue .chip-row { justify-content: flex-end; }
+  .chip {
+    display: inline-flex; align-items: baseline; gap: 4px; background: rgba(0,0,0,.28);
+    border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 16px; white-space: nowrap;
+  }
+  .chip .en { font-family: var(--font-display); letter-spacing: .08em; font-size: 12px; }
+  .num { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .num input {
+    width: 4em; min-height: 30px; border-radius: 6px; border: 2px solid rgba(255,255,255,.75);
+    background: rgba(0,0,0,.22); color: #fff; font: 700 17px var(--font-display); text-align: center; padding: 0 4px;
+  }
+  .num input::placeholder { color: rgba(255,255,255,.6); }
+  .tag { background: #fff; color: #111; font-weight: 700; font-size: 13px; padding: 2px 8px; border-radius: 6px; }
+
+  .tot-label { font-size: 10px; font-weight: 700; letter-spacing: .02em; opacity: .95; white-space: nowrap; }
+  .tot-label .en { font-size: 1em; }
+  .total {
+    font-family: var(--font-display); font-weight: 700; font-size: 17vmin; font-size: min(24cqh, 36cqw);
+    line-height: .9; font-variant-numeric: tabular-nums;
+  }
+  .total.bump { animation: bump .2s ease-out; }
+  @keyframes bump { 0% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+  .sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; width: 100%; }
+  .cell { background: rgba(0,0,0,.22); border-radius: 6px; padding: 1px 2px; min-width: 0; text-align: center; }
+  .cell small { display: block; font-size: 10px; font-weight: 500; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cell small .en { font-size: 1em; margin-left: .2em; }
+  .cell b { display: block; font-family: var(--font-display); font-size: 17px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  .acts { margin-top: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: 100%; }
+  .small {
+    min-height: 52px; border-radius: 10px; background: rgba(0,0,0,.3); color: #fff;
+    font-weight: 700; font-size: 14px; padding: 2px 4px;
+  }
+  .small .en { font-size: .72em; }
+  .small .sub { font-family: var(--font-display); font-size: 13px; letter-spacing: .06em; opacity: .95; min-height: 1em; }
+  .small:disabled { opacity: .35; cursor: not-allowed; }
+  .small.deduct { background: #fff; color: var(--side); }
+  .small.warn { border: 2px solid rgba(255,255,255,.75); }
+  .small:active:not(:disabled) { transform: scale(.97); }
+
+  @container (max-width: 270px) {
+    .info { gap: 4px; }
+    .chip .en, .num > span, .cell small .en, .tot-label .en, .small .en, .undo .en { display: none; }
+    .cell b { font-size: 14px; }
+    .acts { grid-template-columns: 1fr; }
+    .small { min-height: 38px; }
+    .total { font-size: min(22cqh, 44cqw); }
+  }
+  @container (max-height: 270px) {
+    .total { font-size: min(19cqh, 36cqw); }
+    .small { min-height: 42px; }
+    .num input { min-height: 26px; }
+    .tot-label { display: none; }
   }
 
-  @media (max-width: 620px){
-    .score{ font-size:min(14vw, 58px); }
-    .name{ font-size:13px; }
-    .score-col{ width:52px; }
-    .score-col .pt-btn{ font-size:15px; padding:11px 2px; }
-    .pen-title{ font-size:9.5px; }
-    .pen-btn{ font-size:10px; padding:5px 8px; }
+/* ---------- results view ---------- */
+  #results { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .toolbar:empty { display: none; }
+  .toolbar .msg { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .bouts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .bouts .lbl { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .bout {
+    background: transparent; border: 2px solid var(--line); border-radius: 8px; padding: 6px 12px;
+    font-weight: 700; font-size: 14px; color: var(--fg); min-height: 40px; font-variant-numeric: tabular-nums;
   }
+  .bout[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .banner { border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 2px solid var(--line); }
+  .banner.red { background: var(--red); border-color: var(--red); color: #fff; }
+  .banner.blue { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .banner.tie { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+  .banner .b1 { font-weight: 700; font-size: clamp(30px, 7vw, 56px); line-height: 1.05; }
+  .banner .b1 .en { font-family: var(--font-display); font-size: .7em; letter-spacing: .02em; margin-left: .5em; }
+  .banner .b2 { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .95; line-height: 1.5; }
+  .banner .b2 .en { font-size: 1em; margin-left: .3em; }
+  .empty { color: var(--muted); font-size: 15px; line-height: 1.6; padding: 24px 4px; max-width: 46ch; }
+  .tbl-wrap { overflow-x: auto; border: 2px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; min-width: 700px; }
+  th, td { padding: 8px 10px; text-align: center; font-size: 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tbody tr:last-child td, tfoot tr:last-child td { border-bottom: 0; }
+  th { font-size: 13px; font-weight: 700; color: #fff; }
+  th .en { font-size: 1em; margin-left: .3em; }
+  th.r { background: var(--red); }
+  th.b { background: var(--blue); }
+  th.j, th.v { background: var(--surface); color: var(--muted); }
+  th.j { text-align: left; }
+  th.sub { font-weight: 500; }
+  td.j { text-align: left; font-weight: 700; }
+  td.j small, td small.dt { display: block; font-weight: 500; font-size: 12px; color: var(--muted); max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+  td.tot { font-weight: 700; font-family: var(--font-display); font-size: 22px; }
+  td.mid { border-left: 2px solid var(--line); }
+  td.na { color: var(--muted); }
+  td.vt { border-left: 2px solid var(--line); }
+  .vote { display: inline-block; min-width: 4.6em; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #fff; }
+  .vote .en { font-size: 1em; margin-left: .3em; }
+  .vote.r { background: var(--red); }
+  .vote.b { background: var(--blue); }
+  .vote.d { background: var(--muted); }
+  tfoot td { background: var(--surface); font-weight: 700; }
+  .sec-title { font-size: 14px; font-weight: 700; color: var(--muted); letter-spacing: .03em; margin: 0 0 6px; }
+  .sec-title .en { font-size: 1em; margin-left: .3em; }
+  .log-wrap { overflow-x: auto; border: 2px solid var(--line); border-radius: 12px; max-height: 320px; overflow-y: auto; }
+  .log-wrap table { min-width: 560px; }
+  .log-wrap th { background: var(--surface); color: var(--muted); position: sticky; top: 0; }
+  .log-wrap td { font-size: 14px; padding: 6px 10px; }
 
-  /* ---- phone in landscape / fullscreen: compress vertical chrome ---- */
-  @media (orientation: landscape) and (max-height: 480px){
-    .topbar{ padding:5px 12px; }
-    .brand .mark{ font-size:12px; }
-    .brand .sub{ display:none; }
-    .side-head{ padding:4px 12px 0; }
-    .name{ font-size:13px; }
-    .score{ font-size:min(9vw, 72px); }
-    .score-col{ width:56px; gap:4px; padding:4px 6px; }
-    .score-col .pt-btn{ padding:8px 2px; font-size:15px; }
-    .score-col .erase-btn{ padding:5px 2px; }
-    .pen-card{ padding:3px 7px; }
-    .bottombar{ padding:4px 12px; font-size:9.5px; }
+  @media (prefers-reduced-motion: reduce) {
+    .total.bump { animation: none; }
+    .pt, .small { transition: none; }
   }
 </style>
-</head>
-<body>
-<div class="app">
 
-  <div class="topbar">
-    <div class="brand">
-      <span class="mark">TKD SCOREBOARD</span>
-      <span class="sub">score & penalty tracker</span>
-    </div>
-    <div class="topbar-actions">
-      <button class="reset-btn" id="fullscreenBtn">Full screen</button>
-      <button class="reset-btn" id="resetAllBtn">Reset all</button>
-    </div>
+<div class="bar-top">
+  <h1>ITF Sparring<span>對打計分板 Scoreboard</span></h1>
+  <div class="tabs" role="tablist" aria-label="畫面 View">
+    <button type="button" role="tab" id="tab-score" aria-selected="true"><span>計分</span><span class="en">Scoring</span></button>
+    <button type="button" role="tab" id="tab-results" aria-selected="false"><span>結果</span><span class="en">Results</span></button>
   </div>
-
-  <div class="rotate-overlay" id="rotateOverlay">
-    <div class="rotate-icon"></div>
-    <h2>Rotate your phone</h2>
-    <p>This scoreboard is built for landscape — turn your phone sideways for the full-screen layout.</p>
-    <button class="rotate-continue" id="rotateContinueBtn">Continue in portrait</button>
+  <div class="sync" id="sync" data-k="idle" aria-live="polite">
+    <span class="dot"></span><span id="sync-text">結束比賽後回傳 Sends when the match ends</span>
+    <button class="btn mini" id="retry" type="button" hidden>傳送 Send</button>
   </div>
-
-  <div class="arena">
-    <!-- RED -->
-    <div class="side red" data-side="red">
-      <div class="side-head">
-        <input class="name" id="nameRed" value="Red" maxlength="16">
-        <span class="dq-badge" id="dqRed">DISQUALIFIED</span>
-      </div>
-      <div class="side-body">
-        <div class="score-col">
-          <button class="pt-btn" data-side="red" data-pts="1">+1</button>
-          <button class="pt-btn" data-side="red" data-pts="2">+2</button>
-          <button class="pt-btn" data-side="red" data-pts="3">+3</button>
-          <button class="erase-btn" data-side="red" id="eraseRed">Erase last</button>
-        </div>
-        <div class="main-col">
-          <div class="score-wrap"><div class="score" id="scoreRed">0</div></div>
-          <div class="penalties">
-            <div class="pen-card">
-              <div class="pen-left">
-                <div class="pen-head"><span class="pen-title w">WARNING</span><span class="pen-count" id="warnCountRed">0</span></div>
-                <div class="dots" id="warnDotsRed"></div>
-              </div>
-              <button class="pen-btn" data-side="red" data-action="warn" id="warnBtnRed">+ Warning</button>
-            </div>
-            <div class="pen-card">
-              <div class="pen-left">
-                <div class="pen-head"><span class="pen-title f">FOUL</span><span class="pen-count" id="foulCountRed">0</span></div>
-                <div class="dots" id="foulDotsRed"></div>
-              </div>
-              <button class="pen-btn" data-side="red" data-action="foul" id="foulBtnRed">+ Foul</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- BLUE -->
-    <div class="side blue" data-side="blue">
-      <div class="side-head">
-        <input class="name" id="nameBlue" value="Blue" maxlength="16">
-        <span class="dq-badge" id="dqBlue">DISQUALIFIED</span>
-      </div>
-      <div class="side-body">
-        <div class="score-col">
-          <button class="pt-btn" data-side="blue" data-pts="1">+1</button>
-          <button class="pt-btn" data-side="blue" data-pts="2">+2</button>
-          <button class="pt-btn" data-side="blue" data-pts="3">+3</button>
-          <button class="erase-btn" data-side="blue" id="eraseBlue">Erase last</button>
-        </div>
-        <div class="main-col">
-          <div class="score-wrap"><div class="score" id="scoreBlue">0</div></div>
-          <div class="penalties">
-            <div class="pen-card">
-              <div class="pen-left">
-                <div class="pen-head"><span class="pen-title w">WARNING</span><span class="pen-count" id="warnCountBlue">0</span></div>
-                <div class="dots" id="warnDotsBlue"></div>
-              </div>
-              <button class="pen-btn" data-side="blue" data-action="warn" id="warnBtnBlue">+ Warning</button>
-            </div>
-            <div class="pen-card">
-              <div class="pen-left">
-                <div class="pen-head"><span class="pen-title f">FOUL</span><span class="pen-count" id="foulCountBlue">0</span></div>
-                <div class="dots" id="foulDotsBlue"></div>
-              </div>
-              <button class="pen-btn" data-side="blue" data-action="foul" id="foulBtnBlue">+ Foul</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottombar">Every 3rd warning deducts 1 point · Every foul deducts 1 point · 3rd foul disqualifies</div>
+  <button class="btn" id="reset" type="button"></button>
 </div>
 
+<div class="bar-ctrl" id="ctrl">
+  <div class="field"><span>裁判<span class="en">Judge</span></span>
+    <div class="seg" id="judge-seg" role="group" aria-label="裁判編號 Judge number">
+      <button type="button" data-slot="1" aria-pressed="false">1</button>
+      <button type="button" data-slot="2" aria-pressed="false">2</button>
+      <button type="button" data-slot="3" aria-pressed="false">3</button>
+      <button type="button" data-slot="4" aria-pressed="false">4</button>
+    </div>
+  </div>
+  <label class="field"><input id="jname" type="text" placeholder="姓名 Name" maxlength="20" autocomplete="off"></label>
+  <span class="grow"></span>
+  <button class="btn" id="back" type="button" hidden></button>
+  <button class="btn" id="finish" type="button"></button>
+  <div class="result" id="result" hidden aria-live="polite"></div>
+</div>
+
+<main id="board">
+  <section class="panel red" data-side="red" aria-label="紅方 Red">
+    <div class="keys">
+      <button class="pt" type="button" data-act="p1" aria-label="紅方 加1分 Red +1">+1</button>
+      <button class="pt" type="button" data-act="p2" aria-label="紅方 加2分 Red +2">+2</button>
+      <button class="pt" type="button" data-act="p3" aria-label="紅方 加3分 Red +3">+3</button>
+      <button class="undo st" type="button" data-act="undo" id="red-undo" aria-label="紅方 取消前一次 Red undo last"><span>取消前一次</span><span class="en">Undo last</span><span class="sub" id="red-last"></span></button>
+    </div>
+    <div class="info">
+      <div class="chip-row">
+        <span class="chip">紅方<span class="en">Red</span></span>
+        <span class="tag" id="red-win" hidden>勝 Win</span>
+      </div>
+      <label class="num"><span>編號<span class="en">No.</span></span> <input id="red-no" type="text" inputmode="numeric" maxlength="8" placeholder="#" autocomplete="off" aria-label="紅方選手編號 Red competitor number"></label>
+      <div class="tot-label">淨得分 Net score</div>
+      <div class="total" id="red-total" aria-live="polite">0</div>
+      <div class="sum">
+        <div class="cell"><small>得分<span class="en">Pts</span></small><b id="red-pts">0</b></div>
+        <div class="cell"><small>警告<span class="en">Warn</span></small><b id="red-wc">0/3</b></div>
+        <div class="cell"><small>扣分<span class="en">Ded</span></small><b id="red-ded">0</b></div>
+      </div>
+      <div class="acts">
+        <button class="small warn st" type="button" data-act="w" id="red-w" aria-label="紅方 警告 Red warning"><span>警告</span><span class="en">Warning</span><span class="sub" id="red-wp">○○○</span></button>
+        <button class="small deduct st" type="button" data-act="d" id="red-d" aria-label="紅方 扣1分 Red deduct 1"><span>扣分 −1</span><span class="en">Deduct</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel blue" data-side="blue" aria-label="藍方 Blue">
+    <div class="info">
+      <div class="chip-row">
+        <span class="chip">藍方<span class="en">Blue</span></span>
+        <span class="tag" id="blue-win" hidden>勝 Win</span>
+      </div>
+      <label class="num"><span>編號<span class="en">No.</span></span> <input id="blue-no" type="text" inputmode="numeric" maxlength="8" placeholder="#" autocomplete="off" aria-label="藍方選手編號 Blue competitor number"></label>
+      <div class="tot-label">淨得分 Net score</div>
+      <div class="total" id="blue-total" aria-live="polite">0</div>
+      <div class="sum">
+        <div class="cell"><small>得分<span class="en">Pts</span></small><b id="blue-pts">0</b></div>
+        <div class="cell"><small>警告<span class="en">Warn</span></small><b id="blue-wc">0/3</b></div>
+        <div class="cell"><small>扣分<span class="en">Ded</span></small><b id="blue-ded">0</b></div>
+      </div>
+      <div class="acts">
+        <button class="small warn st" type="button" data-act="w" id="blue-w" aria-label="藍方 警告 Blue warning"><span>警告</span><span class="en">Warning</span><span class="sub" id="blue-wp">○○○</span></button>
+        <button class="small deduct st" type="button" data-act="d" id="blue-d" aria-label="藍方 扣1分 Blue deduct 1"><span>扣分 −1</span><span class="en">Deduct</span></button>
+      </div>
+    </div>
+    <div class="keys">
+      <button class="pt" type="button" data-act="p1" aria-label="藍方 加1分 Blue +1">+1</button>
+      <button class="pt" type="button" data-act="p2" aria-label="藍方 加2分 Blue +2">+2</button>
+      <button class="pt" type="button" data-act="p3" aria-label="藍方 加3分 Blue +3">+3</button>
+      <button class="undo st" type="button" data-act="undo" id="blue-undo" aria-label="藍方 取消前一次 Blue undo last"><span>取消前一次</span><span class="en">Undo last</span><span class="sub" id="blue-last"></span></button>
+    </div>
+  </section>
+</main>
+
+<section id="results" hidden aria-label="四位裁判結果 Four-judge results">
+  <div class="toolbar"><button class="btn" id="clear" type="button" hidden></button><span class="msg" id="clear-msg" aria-live="polite"></span></div>
+  <div class="bouts" id="bouts"></div>
+  <div class="banner" id="banner"></div>
+  <div class="tbl-wrap" id="tbl-wrap"></div>
+  <div>
+    <h2 class="sec-title">回傳紀錄<span class="en">Submission log</span> · 每次回傳留一筆,最新在上<span class="en">one entry per submission, newest first</span></h2>
+    <div class="log-wrap" id="log-wrap"></div>
+  </div>
+</section>
+
 <script>
-(function(){
-  const sides = ['red','blue'];
-  const state = {
-    red:  { score:0, scoreHistory:[], warn:0, foul:0, dq:false },
-    blue: { score:0, scoreHistory:[], warn:0, foul:0, dq:false }
-  };
+(function () {
+  var KEY = 'itf-sparring-scoreboard-v1';
+  var JKEY = 'itf-sparring-judge-v1';
+  var JUDGES = 4;
+  var ACTS = ['p1', 'p2', 'p3', 'w', 'd'];
+  var LAST = { p1: '+1', p2: '+2', p3: '+3', w: '警告 W', d: '−1' };
+  var fresh = function () { return { redNo: '', blueNo: '', finished: false, sent: false, red: { h: [] }, blue: { h: [] } }; };
+  var S = fresh();
+  var J = { slot: 0, name: '' };
 
-  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
-  const el = id => document.getElementById(id);
-  const ids = {};
-  sides.forEach(side => {
-    ids[side] = {
-      score: el('score'+cap(side)),
-      dqBadge: el('dq'+cap(side)),
-      erase: el('erase'+cap(side)),
-      warnCount: el('warnCount'+cap(side)),
-      foulCount: el('foulCount'+cap(side)),
-      warnDots: el('warnDots'+cap(side)),
-      foulDots: el('foulDots'+cap(side)),
-      warnBtn: el('warnBtn'+cap(side)),
-      foulBtn: el('foulBtn'+cap(side)),
-      ptBtns: document.querySelectorAll('.pt-btn[data-side="'+side+'"]')
+  var db = null, uid = null, isAdmin = false, clearing = false, canWrite = true, net = 'idle', errCode = '', syncing = false;
+  var ENT = [], LOG = [], selKey = null, view = 'score';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var vib = function () { try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} };
+  var idPart = function (v) { return String(v || '').trim().replace(/[^A-Za-z0-9_.~:@+-]/g, '-').slice(0, 20); };
+  var num = function (v) { return (typeof v === 'number' && isFinite(v)) ? v : null; };
+  function el(tag, cls, txt) { var n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; }
+  function bi(node, zh, en) { node.appendChild(document.createTextNode(zh)); node.appendChild(el('span', 'en', en)); return node; }
+  function setSt(node, zh, en) { node.textContent = ''; node.appendChild(el('span', null, zh)); node.appendChild(el('span', 'en', en)); }
+
+  // Points 1/2/3 add; every third warning costs 1; each deduction costs 1.
+  function tally(h) {
+    var t = { p1: 0, p2: 0, p3: 0, w: 0, d: 0 };
+    h.forEach(function (a) { if (t[a] !== undefined) t[a]++; });
+    t.pts = t.p1 + 2 * t.p2 + 3 * t.p3;
+    t.ded = Math.floor(t.w / 3) + t.d;
+    t.total = t.pts - t.ded;
+    return t;
+  }
+  var signed = function (n) { return n > 0 ? '−' + n : '0'; };
+
+  /* ---------- local state ---------- */
+  function sanSide(x) {
+    var h = (x && Array.isArray(x.h)) ? x.h.filter(function (v) { return ACTS.indexOf(v) >= 0; }).slice(-600) : [];
+    return { h: h };
+  }
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) {
+      S.redNo = typeof saved.redNo === 'string' ? saved.redNo.slice(0, 8) : '';
+      S.blueNo = typeof saved.blueNo === 'string' ? saved.blueNo.slice(0, 8) : '';
+      S.finished = !!saved.finished; S.sent = !!saved.sent;
+      S.red = sanSide(saved.red); S.blue = sanSide(saved.blue);
+    }
+    var sj = JSON.parse(localStorage.getItem(JKEY) || 'null');
+    if (sj) { J.slot = Math.max(0, Math.min(JUDGES, sj.slot | 0)); J.name = typeof sj.name === 'string' ? sj.name.slice(0, 20) : ''; }
+  } catch (e) {}
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function persistJ() { try { localStorage.setItem(JKEY, JSON.stringify(J)); } catch (e) {} }
+
+  /* ---------- scoring board render ---------- */
+  function renderSide(side, bump) {
+    var h = S[side].h, t = tally(h), fin = S.finished;
+    var big = $(side + '-total');
+    big.textContent = String(t.total);
+    if (bump) { big.classList.remove('bump'); void big.offsetWidth; big.classList.add('bump'); }
+    $(side + '-pts').textContent = String(t.pts);
+    $(side + '-wc').textContent = (t.w % 3) + '/3';
+    $(side + '-ded').textContent = signed(t.ded);
+    var r = t.w % 3;
+    $(side + '-wp').textContent = '●'.repeat(r) + '○'.repeat(3 - r);
+    $(side + '-last').textContent = h.length ? LAST[h[h.length - 1]] : '';
+    $(side + '-w').disabled = fin;
+    $(side + '-d').disabled = fin;
+    $(side + '-undo').disabled = fin || !h.length;
+    var panel = document.querySelector('.panel[data-side="' + side + '"]');
+    var btns = panel.querySelectorAll('.pt');
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = fin;
+    panel.classList.toggle('locked', fin);
+  }
+
+  function myCall() {
+    var r = tally(S.red.h).total, b = tally(S.blue.h).total;
+    return { r: r, b: b, side: r > b ? 'red' : (b > r ? 'blue' : 'tie') };
+  }
+
+  function renderCtrl() {
+    var fin = S.finished, res = $('result'), back = $('back'), finish = $('finish');
+    finish.hidden = fin;
+    setSt(finish, '結束比賽並回傳', 'End match & send');
+    back.hidden = !fin;
+    setSt(back, '← 返回修改', 'Back to edit');
+    res.hidden = !fin;
+    var c = myCall();
+    if (fin) {
+      res.className = 'result ' + c.side;
+      res.textContent = '我的判定 My call:' + (c.side === 'tie' ? '平手 Draw' : (c.side === 'red' ? '紅方勝 Red wins' : '藍方勝 Blue wins')) + '　' + c.r + ' : ' + c.b;
+    }
+    ['red', 'blue'].forEach(function (side) {
+      var w = fin && c.side === side;
+      $(side + '-win').hidden = !w;
+      document.querySelector('.panel[data-side="' + side + '"]').classList.toggle('win', w);
+    });
+    var jb = $('judge-seg').querySelectorAll('button');
+    for (var i = 0; i < jb.length; i++) jb[i].setAttribute('aria-pressed', String(+jb[i].getAttribute('data-slot') === J.slot));
+    if (!resetBtn.classList.contains('confirm')) setSt(resetBtn, '重置比賽', 'Reset match');
+  }
+
+  function renderInputs() {
+    if ($('red-no').value !== S.redNo) $('red-no').value = S.redNo;
+    if ($('blue-no').value !== S.blueNo) $('blue-no').value = S.blueNo;
+    if ($('jname').value !== J.name) $('jname').value = J.name;
+  }
+  function renderAll(bump) { renderSide('red', bump); renderSide('blue', bump); renderCtrl(); renderStatus(); }
+
+  /* ---------- sync status ---------- */
+  function pending() { return S.finished && !S.sent; }
+  function missing() {
+    var m = [];
+    if (!J.slot) m.push('裁判 Judge');
+    if (!idPart(S.redNo)) m.push('紅方編號 Red No.');
+    if (!idPart(S.blueNo)) m.push('藍方編號 Blue No.');
+    return m;
+  }
+  function renderStatus() {
+    var k = 'idle', msg;
+    var p = pending(), miss = missing();
+    if (!db) { k = 'off'; msg = '離線 Offline · 分數只存在這台裝置 saved on this device only'; }
+    else if (!canWrite) { k = 'err'; msg = '沒有寫入權限 No write access · 請用協作者身分開啟 open as a collaborator'; }
+    else if (net === 'sending') { k = 'busy'; msg = '傳送中 Sending…'; }
+    else if (net === 'error') { k = 'err'; msg = '傳送失敗 Failed' + (errCode ? '(' + errCode + ')' : '') + ' · 請重試 retry'; }
+    else if (p) { k = 'warn'; msg = '尚未回傳 Not sent' + (miss.length ? ' · 請填 fill: ' + miss.join('、') : ''); }
+    else if (S.finished) { k = 'ok'; msg = '已回傳至結果頁 Sent to results'; }
+    else { msg = miss.length ? '開賽前請填 Fill before the match: ' + miss.join('、') : '結束比賽後回傳 Sends when the match ends'; }
+    $('sync').setAttribute('data-k', k);
+    $('sync-text').textContent = msg;
+    $('sync').title = msg;
+    $('retry').hidden = !(db && canWrite && p && net !== 'sending');
+  }
+
+  /* ---------- upload ---------- */
+  async function sync() {
+    if (!db || !canWrite || syncing || !pending()) { renderStatus(); return; }
+    if (missing().length) { net = 'idle'; renderStatus(); return; }
+    syncing = true; net = 'sending'; renderStatus();
+    try {
+      var rn = idPart(S.redNo), bn = idPart(S.blueNo), now = Date.now();
+      var r = tally(S.red.h), b = tally(S.blue.h);
+      var det = function (t) { return { p1: t.p1, p2: t.p2, p3: t.p3, w: t.w, d: t.d, pts: t.pts, ded: t.ded }; };
+      await db.collection('log').add({
+        ts: now, slot: J.slot, judge: J.name, uid: uid || '',
+        red: String(S.redNo).trim(), blue: String(S.blueNo).trim(),
+        redTotal: r.total, blueTotal: b.total, redDetail: det(r), blueDetail: det(b)
+      });
+      await db.doc('entries/' + rn + '_' + bn + '_j' + J.slot).set({
+        red: String(S.redNo).trim(), blue: String(S.blueNo).trim(), slot: J.slot, judge: J.name, uid: uid || '',
+        rt: r.total, bt: b.total, r: det(r), b: det(b), updatedAt: now
+      });
+      S.sent = true; persist();
+      net = 'idle'; errCode = '';
+    } catch (e) {
+      net = 'error'; errCode = (e && e.code) || '';
+      if (errCode === 'invalid_argument') canWrite = false;
+    } finally {
+      syncing = false; renderStatus();
+    }
+  }
+
+  /* ---------- events: scoring ---------- */
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-act]');
+    if (!btn || S.finished) return;
+    var side = btn.closest('.panel').getAttribute('data-side');
+    var h = S[side].h, act = btn.getAttribute('data-act');
+    if (ACTS.indexOf(act) >= 0) h.push(act);
+    else if (act === 'undo' && h.length) h.pop();
+    else return;
+    vib(); persist(); renderSide(side, true); renderCtrl();
+  });
+
+  $('finish').addEventListener('click', function () {
+    if (S.finished) return;
+    S.finished = true; S.sent = false; vib(); persist(); renderAll(true); sync();
+  });
+  $('back').addEventListener('click', function () {
+    if (!S.finished) return;
+    S.finished = false; S.sent = false; vib(); persist(); renderAll(true);
+  });
+
+  var resetBtn = $('reset'), resetTimer = null;
+  resetBtn.addEventListener('click', function () {
+    if (!resetBtn.classList.contains('confirm')) {
+      resetBtn.classList.add('confirm'); setSt(resetBtn, '再按一次確認重置', 'Tap again to reset');
+      resetTimer = setTimeout(function () { resetBtn.classList.remove('confirm'); setSt(resetBtn, '重置比賽', 'Reset match'); }, 3000);
+      return;
+    }
+    clearTimeout(resetTimer);
+    resetBtn.classList.remove('confirm');
+    S = fresh(); net = 'idle'; errCode = '';
+    persist(); renderInputs(); renderAll(true);
+  });
+
+  /* ---------- events: judge + contestant fields ---------- */
+  $('judge-seg').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-slot]');
+    if (!b) return;
+    J.slot = +b.getAttribute('data-slot'); persistJ(); renderCtrl(); renderStatus(); sync();
+  });
+  $('jname').addEventListener('input', function (e) { J.name = e.target.value; persistJ(); });
+  ['red', 'blue'].forEach(function (side) {
+    var inp = $(side + '-no');
+    inp.addEventListener('input', function (e) { S[side + 'No'] = e.target.value; persist(); renderStatus(); });
+    inp.addEventListener('change', function () { sync(); });
+  });
+
+  /* ---------- results view ---------- */
+  function groupBouts() {
+    var m = {};
+    ENT.forEach(function (e) {
+      if (!e || typeof e !== 'object') return;
+      var slot = e.slot | 0;
+      if (slot < 1 || slot > JUDGES) return;
+      var key = String(e.red) + '|' + String(e.blue);
+      var b = m[key] || (m[key] = { key: key, red: String(e.red), blue: String(e.blue), j: {}, t: 0 });
+      b.j[slot] = e;
+      b.t = Math.max(b.t, num(e.updatedAt) || 0);
+    });
+    return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.t - a.t; });
+  }
+  var n0 = function (v) { var x = num(v); return x === null ? 0 : x; };
+  var minus = function (n) { return n > 0 ? '−' + n : '0'; };
+  var brk = function (d) { return d ? '1×' + n0(d.p1) + ' 2×' + n0(d.p2) + ' 3×' + n0(d.p3) + ' · W' + n0(d.w) + ' D' + n0(d.d) : ''; };
+
+  // Each judge casts one vote for the corner with the higher net score (equal = draw).
+  function summarize(sel) {
+    var rows = [], n = 0, vR = 0, vB = 0, vD = 0, sumR = 0, sumB = 0, ptsR = 0, ptsB = 0, dedR = 0, dedB = 0;
+    for (var s = 1; s <= JUDGES; s++) {
+      var e = sel.j[s], row = { slot: s, e: e || null, vote: null };
+      if (e) {
+        row.rt = num(e.rt); row.bt = num(e.bt);
+        if (row.rt !== null && row.bt !== null) {
+          n++; sumR += row.rt; sumB += row.bt;
+          ptsR += n0(e.r && e.r.pts); ptsB += n0(e.b && e.b.pts);
+          dedR += n0(e.r && e.r.ded); dedB += n0(e.b && e.b.ded);
+          if (row.rt > row.bt) { row.vote = 'r'; vR++; } else if (row.bt > row.rt) { row.vote = 'b'; vB++; } else { row.vote = 'd'; vD++; }
+        }
+      }
+      rows.push(row);
+    }
+    return { rows: rows, n: n, vR: vR, vB: vB, vD: vD, sumR: sumR, sumB: sumB, ptsR: ptsR, ptsB: ptsB, dedR: dedR, dedB: dedB };
+  }
+
+  // 3 of 4 votes wins at once. With all four in: more votes wins; 2:2 goes to the higher combined score; equal = draw.
+  function verdict(m) {
+    if (!m.n) return { cls: '', zh: '進行中', en: 'In progress', zs: '尚無裁判回傳', es: 'No judge has sent a result yet' };
+    var side, zh, en, extraZ = '', extraE = '';
+    var winZ = function (s) { return s === 'red' ? '紅方勝' : '藍方勝'; };
+    var winE = function (s) { return s === 'red' ? 'Red wins' : 'Blue wins'; };
+    if (m.vR >= 3 || m.vB >= 3) { side = m.vR >= 3 ? 'red' : 'blue'; zh = winZ(side); en = winE(side); }
+    else if (m.n === JUDGES) {
+      if (m.vR !== m.vB) { side = m.vR > m.vB ? 'red' : 'blue'; zh = winZ(side); en = winE(side); }
+      else if (m.sumR !== m.sumB) { side = m.sumR > m.sumB ? 'red' : 'blue'; zh = winZ(side); en = winE(side); extraZ = ' · 同票,以總分決定'; extraE = ' · Votes level, decided by total score'; }
+      else { side = 'tie'; zh = '平手'; en = 'Draw'; extraZ = ' · 需主審裁定'; extraE = ' · Referee decides'; }
+    } else if (m.vR === m.vB) { side = 'tie'; zh = '暫時平手'; en = 'Level so far'; }
+    else { side = m.vR > m.vB ? 'red' : 'blue'; zh = side === 'red' ? '紅方領先' : '藍方領先'; en = side === 'red' ? 'Red leads' : 'Blue leads'; }
+    var tot = m.sumR + ' : ' + m.sumB;
+    return {
+      cls: side, zh: zh, en: en,
+      zs: '票數 ' + m.vR + ' : ' + m.vB + (m.vD ? '(平 ' + m.vD + ')' : '') + ' · 已回傳 ' + m.n + '/' + JUDGES + ' 位裁判 · 總分 ' + tot + extraZ,
+      es: 'Votes ' + m.vR + ' : ' + m.vB + (m.vD ? ' (' + m.vD + ' draw)' : '') + ' · ' + m.n + '/' + JUDGES + ' judges sent · Total ' + tot + extraE
     };
+  }
+
+  function renderClear() {
+    var b = $('clear');
+    b.hidden = !(db && isAdmin);
+    if (clearing || b.classList.contains('confirm')) return;
+    setSt(b, '清除全部結果', 'Clear all results');
+  }
+  var clearTimer = null;
+  $('clear').addEventListener('click', async function () {
+    var b = $('clear');
+    if (clearing || !db) return;
+    if (!b.classList.contains('confirm')) {
+      b.classList.add('confirm'); setSt(b, '再按一次確認清除', 'Tap again to clear');
+      clearTimer = setTimeout(function () { b.classList.remove('confirm'); renderClear(); }, 4000);
+      return;
+    }
+    clearTimeout(clearTimer); b.classList.remove('confirm');
+    clearing = true; setSt(b, '清除中…', 'Clearing…');
+    var msg = $('clear-msg'), n = 0;
+    msg.textContent = '';
+    try {
+      var names = ['entries', 'log'];
+      for (var k = 0; k < names.length; k++) {
+        for (var round = 0; round < 40; round++) {
+          var snap = await db.collection(names[k]).limit(1000).get();
+          if (!snap.docs.length) break;
+          for (var i = 0; i < snap.docs.length; i++) { await db.doc(names[k] + '/' + snap.docs[i].id).delete(); n++; }
+        }
+      }
+      msg.textContent = '已清除 ' + n + ' 筆 · Cleared ' + n + ' entr' + (n === 1 ? 'y' : 'ies');
+    } catch (e) {
+      msg.textContent = '清除失敗 Clear failed' + (e && e.code ? '(' + e.code + ')' : '');
+    } finally {
+      clearing = false; renderClear();
+    }
   });
 
-  function renderDots(container, count, mod, fillClass){
-    container.innerHTML = '';
-    const shown = mod ? (count % mod === 0 && count > 0 ? mod : count % mod) : count;
-    const total = mod || Math.max(count,3);
-    for(let i=1;i<=total;i++){
-      const d = document.createElement('div');
-      d.className = 'dot' + (i <= shown ? ' '+fillClass : '');
-      container.appendChild(d);
+  function renderResults() { renderResultsInner(); renderClear(); }
+
+  function renderResultsInner() {
+    var boutsEl = $('bouts'), banner = $('banner'), wrap = $('tbl-wrap');
+    boutsEl.textContent = ''; wrap.textContent = ''; banner.textContent = '';
+    boutsEl.hidden = true; wrap.hidden = true; banner.hidden = false;
+    banner.className = 'banner';
+    var all = groupBouts();
+
+    if (!db) {
+      banner.appendChild(bi(el('div', 'b2'), '這個頁面還沒連到共用資料庫。請在 claude.ai 登入後開啟。', 'Not connected to the shared database. Open this page signed in on claude.ai.'));
+      renderLog(); return;
     }
-  }
-
-  function render(side){
-    const s = state[side];
-    const r = ids[side];
-    r.score.textContent = s.score;
-    r.dqBadge.classList.toggle('show', s.dq);
-    r.erase.disabled = s.scoreHistory.length === 0;
-    r.warnCount.textContent = s.warn;
-    r.foulCount.textContent = s.foul + ' / 3';
-    renderDots(r.warnDots, s.warn, 3, 'w-fill');
-    renderDots(r.foulDots, s.foul, 3, 'f-fill');
-    r.warnBtn.disabled = s.dq;
-    r.foulBtn.disabled = s.dq;
-    r.ptBtns.forEach(b => b.disabled = s.dq);
-  }
-
-  function addPoints(side, pts){
-    const s = state[side];
-    if(s.dq) return;
-    s.score += pts;
-    s.scoreHistory.push(pts);
-    render(side);
-  }
-
-  function eraseLast(side){
-    const s = state[side];
-    if(s.scoreHistory.length === 0) return;
-    const last = s.scoreHistory.pop();
-    s.score -= last;
-    render(side);
-  }
-
-  function addWarning(side){
-    const s = state[side];
-    if(s.dq) return;
-    s.warn += 1;
-    if(s.warn % 3 === 0){
-      s.score -= 1;
+    if (!all.length) {
+      banner.appendChild(bi(el('div', 'b1'), '等待裁判回傳', 'Waiting for judges'));
+      banner.appendChild(bi(el('div', 'b2'), '裁判在「計分」畫面按下「結束比賽並回傳」後,結果會自動出現在這裡。', 'Results appear here after judges press "End match & send" on the Scoring screen.'));
+      renderLog(); return;
     }
-    render(side);
-  }
 
-  function addFoul(side){
-    const s = state[side];
-    if(s.dq) return;
-    s.foul += 1;
-    s.score -= 1;
-    if(s.foul >= 3){
-      s.dq = true;
-    }
-    render(side);
-  }
-
-  sides.forEach(side => {
-    ids[side].ptBtns.forEach(btn => {
-      btn.addEventListener('click', () => addPoints(side, parseInt(btn.dataset.pts,10)));
+    var sel = all[0];
+    for (var i = 0; i < all.length; i++) if (all[i].key === selKey) sel = all[i];
+    boutsEl.hidden = false; wrap.hidden = false;
+    boutsEl.appendChild(bi(el('span', 'lbl'), '對戰', 'Match'));
+    all.slice(0, 12).forEach(function (b) {
+      var btn = el('button', 'bout', '紅 Red #' + b.red + ' vs 藍 Blue #' + b.blue);
+      btn.type = 'button';
+      btn.setAttribute('aria-pressed', String(b.key === sel.key));
+      btn.addEventListener('click', function () { selKey = b.key; renderResults(); });
+      boutsEl.appendChild(btn);
     });
-    ids[side].erase.addEventListener('click', () => eraseLast(side));
-    ids[side].warnBtn.addEventListener('click', () => addWarning(side));
-    ids[side].foulBtn.addEventListener('click', () => addFoul(side));
-  });
 
-  // ---- fullscreen + landscape prompt ----
-  const fsBtn = el('fullscreenBtn');
-  const rotateOverlay = el('rotateOverlay');
-  let dismissedPortraitPrompt = false;
+    var m = summarize(sel), v = verdict(m);
+    banner.className = 'banner ' + v.cls;
+    banner.appendChild(bi(el('div', 'b1'), v.zh, v.en));
+    banner.appendChild(el('div', 'b2', '紅 Red #' + sel.red + ' vs 藍 Blue #' + sel.blue));
+    banner.appendChild(el('div', 'b2', v.zs));
+    banner.appendChild(el('div', 'b2', v.es));
 
-  function enterFullscreen(){
-    const d = document.documentElement;
-    const req = d.requestFullscreen || d.webkitRequestFullscreen || d.msRequestFullscreen;
-    if(req){ req.call(d).catch(() => {}); }
-    if(screen.orientation && screen.orientation.lock){
-      screen.orientation.lock('landscape').catch(() => {});
-    }
-  }
-  function exitFullscreen(){
-    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-    if(exit){ exit.call(document).catch(() => {}); }
-  }
-  function isFullscreen(){
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-  function updateFsBtn(){
-    fsBtn.textContent = isFullscreen() ? 'Exit full screen' : 'Full screen';
-  }
-  fsBtn.addEventListener('click', () => {
-    isFullscreen() ? exitFullscreen() : enterFullscreen();
-  });
-  document.addEventListener('fullscreenchange', updateFsBtn);
-  document.addEventListener('webkitfullscreenchange', updateFsBtn);
+    var t = el('table');
+    var thead = el('thead');
+    var h1 = el('tr');
+    h1.appendChild(Object.assign(bi(el('th', 'j'), '裁判', 'Judge'), { rowSpan: 2 }));
+    h1.appendChild(Object.assign(bi(el('th', 'r'), '紅方 #' + sel.red, 'Red'), { colSpan: 3 }));
+    h1.appendChild(Object.assign(bi(el('th', 'b'), '藍方 #' + sel.blue, 'Blue'), { colSpan: 3 }));
+    h1.appendChild(Object.assign(bi(el('th', 'v'), '投票', 'Vote'), { rowSpan: 2 }));
+    thead.appendChild(h1);
+    var h2 = el('tr');
+    [['r', '得分', 'Points'], ['r', '扣分', 'Deduct'], ['r', '淨得分', 'Net'], ['b', '得分', 'Points'], ['b', '扣分', 'Deduct'], ['b', '淨得分', 'Net']]
+      .forEach(function (x) { h2.appendChild(bi(el('th', x[0] + ' sub'), x[1], x[2])); });
+    thead.appendChild(h2);
+    t.appendChild(thead);
 
-  const portraitQuery = window.matchMedia('(orientation: portrait)');
-  function checkOrientation(){
-    const isSmallScreen = Math.min(window.innerWidth, window.innerHeight) < 700;
-    if(portraitQuery.matches && isSmallScreen && !dismissedPortraitPrompt){
-      rotateOverlay.classList.add('show');
-    } else {
-      rotateOverlay.classList.remove('show');
-    }
-    if(!portraitQuery.matches){ dismissedPortraitPrompt = false; }
-  }
-  portraitQuery.addEventListener ? portraitQuery.addEventListener('change', checkOrientation) : portraitQuery.addListener(checkOrientation);
-  window.addEventListener('resize', checkOrientation);
-  el('rotateContinueBtn').addEventListener('click', () => {
-    dismissedPortraitPrompt = true;
-    rotateOverlay.classList.remove('show');
-  });
-  checkOrientation();
-
-  el('resetAllBtn').addEventListener('click', () => {
-    if(!confirm('Reset both competitors? This clears scores, warnings and fouls.')) return;
-    sides.forEach(side => {
-      state[side] = { score:0, scoreHistory:[], warn:0, foul:0, dq:false };
-      render(side);
+    var tb = el('tbody');
+    m.rows.forEach(function (r) {
+      var tr = el('tr');
+      var jc = el('td', 'j', '裁判 Judge ' + r.slot);
+      if (r.e && r.e.judge) jc.appendChild(el('small', null, String(r.e.judge)));
+      tr.appendChild(jc);
+      var e = r.e, has = e && r.vote !== null;
+      var cells = has
+        ? [[n0(e.r && e.r.pts), brk(e.r), ''], [minus(n0(e.r && e.r.ded)), '', ''], [r.rt, '', 'tot'],
+           [n0(e.b && e.b.pts), brk(e.b), 'mid'], [minus(n0(e.b && e.b.ded)), '', ''], [r.bt, '', 'tot']]
+        : [[null], [null], [null], [null], [null], [null]];
+      cells.forEach(function (c, i) {
+        var td = el('td', (c[2] || '') + (i === 3 ? ' mid' : '') + (c[0] === null ? ' na' : ''), c[0] === null ? '—' : String(c[0]));
+        if (c[1]) td.appendChild(el('small', 'dt', c[1]));
+        tr.appendChild(td);
+      });
+      var vt = el('td', 'vt');
+      if (r.vote === 'r') vt.appendChild(bi(el('span', 'vote r'), '紅', 'Red'));
+      else if (r.vote === 'b') vt.appendChild(bi(el('span', 'vote b'), '藍', 'Blue'));
+      else if (r.vote === 'd') vt.appendChild(bi(el('span', 'vote d'), '平', 'Draw'));
+      else { vt.textContent = '—'; vt.className = 'vt na'; }
+      tr.appendChild(vt);
+      tb.appendChild(tr);
     });
-  });
+    t.appendChild(tb);
 
-  sides.forEach(render);
+    var tf = el('tfoot'), fr = el('tr');
+    fr.appendChild(bi(el('td', 'j'), '總和', 'Sum'));
+    [m.ptsR, minus(m.dedR), m.sumR, m.ptsB, minus(m.dedB), m.sumB].forEach(function (x, i) {
+      fr.appendChild(el('td', (i === 2 || i === 5 ? 'tot ' : '') + (i === 3 ? 'mid' : ''), String(x)));
+    });
+    fr.appendChild(el('td', 'tot vt', m.vR + ' : ' + m.vB));
+    tf.appendChild(fr); t.appendChild(tf);
+    wrap.appendChild(t);
+    renderLog();
+  }
+
+  function renderLog() {
+    var w = $('log-wrap');
+    w.textContent = '';
+    if (!LOG.length) { w.appendChild(bi(el('div', 'empty'), db ? '還沒有紀錄。' : '連線後這裡會列出每一次回傳。', db ? 'No entries yet.' : 'Every submission is listed here once connected.')); return; }
+    var t = el('table'), th = el('thead'), tr = el('tr');
+    [['時間', 'Time'], ['裁判', 'Judge'], ['紅方 #', 'Red'], ['藍方 #', 'Blue'], ['紅淨得分', 'Red net'], ['藍淨得分', 'Blue net']]
+      .forEach(function (x) { tr.appendChild(bi(el('th'), x[0], x[1])); });
+    th.appendChild(tr); t.appendChild(th);
+    var tb = el('tbody');
+    LOG.forEach(function (r) {
+      var d = new Date(num(r.ts) || 0), row = el('tr');
+      var time = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+      [time, (r.slot | 0) + (r.judge ? ' ' + r.judge : ''), r.red, r.blue, num(r.redTotal), num(r.blueTotal)]
+        .forEach(function (x) { row.appendChild(el('td', null, x == null ? '—' : String(x))); });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb); w.appendChild(t);
+  }
+
+  /* ---------- view tabs ---------- */
+  function showView(v) {
+    view = v;
+    var score_ = v === 'score';
+    $('board').hidden = !score_; $('ctrl').hidden = !score_; $('results').hidden = score_;
+    $('tab-score').setAttribute('aria-selected', String(score_));
+    $('tab-results').setAttribute('aria-selected', String(!score_));
+    if (!score_) renderResults();
+  }
+  $('tab-score').addEventListener('click', function () { showView('score'); });
+  $('tab-results').addEventListener('click', function () { showView('results'); });
+  $('retry').addEventListener('click', function () { net = 'idle'; sync(); });
+
+  /* ---------- boot ---------- */
+  renderInputs();
+  renderAll(false);
+  showView((location.hash || '').replace('#', '') === 'results' ? 'results' : 'score');
+
+  (async function () {
+    try {
+      if (window.claude && window.claude.use) {
+        var u = await window.claude.use('user');
+        if (u) {
+          uid = await u.id();
+          isAdmin = (await u.canEdit()) || (await u.isOwner());
+          var w = await u.can('data.write');
+          if (w === false) canWrite = false;
+        }
+        db = await window.claude.use('db');
+      }
+    } catch (e) { db = null; }
+    if (db) {
+      try {
+        db.collection('entries').limit(1000).onSnapshot(function (snap) {
+          ENT = snap.docs.map(function (d) { return d.data(); }); if (view === 'results') renderResults();
+        }, function () {});
+        db.collection('log').orderBy('ts', 'desc').limit(100).onSnapshot(function (snap) {
+          LOG = snap.docs.map(function (d) { return d.data(); }); if (view === 'results') renderLog();
+        }, function () {});
+      } catch (e) {}
+    }
+    renderStatus();
+    if (view === 'results') renderResults();
+    sync();
+  })();
+
+  // keep the screen on while scoring (optional, may be refused)
+  var lock = null;
+  function wake() {
+    try {
+      if (navigator.wakeLock && document.visibilityState === 'visible') {
+        navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', wake);
+  wake();
 })();
 </script>
-</body>
-</html>
+
+</body></html>
