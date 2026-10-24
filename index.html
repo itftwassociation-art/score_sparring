@@ -49,7 +49,7 @@
   main { flex: 1; min-height: 0; overflow: hidden; display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .panel {
     --side: var(--red); background: var(--side); color: #fff; border-radius: 12px; padding: 8px;
-    display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 8px;
+    display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 8px;
     container-type: size; min-width: 0; min-height: 0; overflow: hidden;
   }
   .panel.blue { --side: var(--blue); }
@@ -65,12 +65,12 @@
   .pt:active:not(:disabled) { transform: scale(.96); }
   .pt:disabled { opacity: .35; cursor: not-allowed; }
   .undo {
-    flex: .8; min-height: 0; border-radius: 10px; background: rgba(0,0,0,.32); color: #fff;
-    border: 2px solid rgba(255,255,255,.7); font-weight: 700; font-size: 15px; padding: 2px 4px;
+    flex: 0 0 auto; min-height: 34px; height: 15%; border-radius: 10px; background: rgba(0,0,0,.32); color: #fff;
+    border: 2px solid rgba(255,255,255,.7); font-weight: 700; font-size: 13px; padding: 0 4px;
     display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1;
   }
   .undo:disabled { opacity: .35; cursor: not-allowed; }
-  .undo b { font: 700 15px var(--font-display); letter-spacing: .04em; }
+  .undo b { font: 700 13px var(--font-display); letter-spacing: .04em; }
 
   /* info: chip, total, tallies, warning / deduct */
   .info { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; }
@@ -96,7 +96,7 @@
   .step button:disabled { opacity: .35; cursor: not-allowed; }
 
   @container (max-width: 270px) {
-    .panel { grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 6px; padding: 6px; }
+    .panel { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 6px; padding: 6px; }
     .total { font-size: min(22cqh, 44cqw); }
     .step { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 2px 2px; padding: 3px; }
     .step b { font-size: 20px; min-width: 1em; }
